@@ -16,7 +16,8 @@ module DnsHelper
                                          :keyname => "example.com", 
                                          :keyvalue => $bind_keyvalue,
                                          :domain_suffix => $domain, 
-                                         :zone => "example.com"})
+                                         :zone => "example.com",
+                                         :use_nsupdate => "true"})
     end
     $dns_con
   end

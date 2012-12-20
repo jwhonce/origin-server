@@ -28,7 +28,7 @@ Requires:       qpid-cpp-client
 Requires:       selinux-policy-targeted
 Requires:       policycoreutils-python
 Requires:       openshift-origin-msg-common
-Requires:       %{?scl:%scl_prefix}ruby-qpid-qmf
+#Requires:       %{?scl:%scl_prefix}ruby-qpid-qmf
 %if 0%{?fedora}%{?rhel} <= 6
 BuildRequires:  ruby193-build
 BuildRequires:  scl-utils-build

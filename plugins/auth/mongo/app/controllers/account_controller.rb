@@ -3,7 +3,9 @@ class AccountController < BaseController
   before_filter :authenticate, :check_version
   
   def create
-    username = params[:username]
+    Rails.logger.debug params.inspect
+
+    username = params["username"]
     password = params[:password]
     
     auth_config = Rails.application.config.auth

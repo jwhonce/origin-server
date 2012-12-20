@@ -273,8 +273,8 @@ run "/usr/sbin/lokkit --service=https"
 run "/usr/sbin/lokkit -p 8000:tcp"
 run "/usr/sbin/lokkit -p 8443:tcp"
 
-$log.info "Setting up m-collective to use qpid"
-$log.info "...configuring mcollective client to use qpid"
+$log.info "Setting up m-collective to use ActiveMQ"
+$log.info "...configuring mcollective client to use ActiveMQ"
 File.open("/etc/mcollective/client.cfg","w") do |f|
   f.write <<-EOF
 topicprefix = /topic/
@@ -287,10 +287,11 @@ logfile = /var/log/mcollective-client.log
 # Plugins
 securityprovider = psk
 plugin.psk = unset
-connector = qpid
-plugin.qpid.host=broker.#{node_domain}
-plugin.qpid.secure=false
-plugin.qpid.timeout=5
+connector = stomp
+plugin.stomp.host = broker.#{node_domain}
+plugin.stomp.port = 61613
+plugin.stomp.user = mcollective
+plugin.stomp.password = marionette
 
 # Facts
 factsource = yaml
@@ -298,7 +299,7 @@ plugin.yaml = /etc/mcollective/facts.yaml
 EOF
 end
 
-$log.info "...configuring mcollective server to use qpid"
+$log.info "...configuring mcollective server to use ActiveMQ"
 File.open("/etc/mcollective/server.cfg", "w") do |f|
   f.write <<-EOF
 topicprefix = /topic/
@@ -313,10 +314,11 @@ direct_addressing = n
 # Plugins
 securityprovider = psk
 plugin.psk = unset
-connector = qpid
-plugin.qpid.host=broker.#{node_domain}
-plugin.qpid.secure=false
-plugin.qpid.timeout=5
+connector = stomp
+plugin.stomp.host = broker.#{node_domain}
+plugin.stomp.port = 61613
+plugin.stomp.user = mcollective
+plugin.stomp.password = marionette
 
 # Facts
 factsource = yaml

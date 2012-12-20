@@ -38,7 +38,7 @@ Broker::Application.configure do
   ############################################
   conf = OpenShift::Config.new(File.join(OpenShift::Config::CONF_DIR, 'broker-dev.conf'))
   config.datastore = {
-    :replica_set => true,
+    :replica_set => false,
     :host_port => ["localhost", 27017],
 
     :user => "openshift",

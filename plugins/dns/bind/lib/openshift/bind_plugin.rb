@@ -30,6 +30,7 @@ module OpenShift
       @keyname = access_info[:keyname]
       @keyvalue = access_info[:keyvalue]
       @zone = access_info[:zone]
+      @use_nsupdate = access_info[:use_nsupdate]
     end
 
     def dns
@@ -42,49 +43,80 @@ module OpenShift
 
     def namespace_available?(namespace)
       fqdn = "#{namespace}.#{@domain_suffix}"
-
-      # If we get a response, then the namespace is reserved
-      # An exception means that it is available
-      begin
-        dns.query(fqdn, Dnsruby::Types::TXT)
-        return false
-      rescue Dnsruby::NXDomain
-        return true
-      end
+      not dns_entry_exists?(fqdn, Dnsruby::Types::TXT)
     end
 
     def register_namespace(namespace)
       # create a TXT record for the namespace in the domain
       fqdn = "#{namespace}.#{@domain_suffix}"
-      # enable updates with key
-      dns.tsig = @keyname, @keyvalue
-
-      update = Dnsruby::Update.new(@zone)
-      #   update.absent(fqdn, 'TXT')
-      update.add(fqdn, 'TXT', 60, "Text record for #{namespace}")
-      dns.send_message(update)
+      
+      if @use_nsupdate
+        raise ::OpenShift::DNSAlreadyExistsException.new if dns_entry_exists?(fqdn, Dnsruby::Types::TXT)
+        raise DNSException.new unless system %{
+nsupdate <<EOF
+key #{@keyname} #{@keyvalue}
+server #{@server} #{@port}
+update add #{fqdn} 60 TXT "namespace record for #{namespace}"
+send
+quit
+EOF
+        }
+      else
+        # enable updates with key
+        dns.tsig = @keyname, @keyvalue
+        update = Dnsruby::Update.new(@zone)
+        #   update.absent(fqdn, 'TXT')
+        update.add(fqdn, 'TXT', 60, "Text record for #{namespace}")
+        dns.send_message(update)
+      end
     end
 
     def deregister_namespace(namespace)
       # create a TXT record for the namespace in the domain
       fqdn = "#{namespace}.#{@domain_suffix}"
-      # enable updates with key
-      dns.tsig = @keyname, @keyvalue
-
-      update = Dnsruby::Update.new(@zone)
-      update.delete(fqdn, 'TXT')
-      dns.send_message(update)
+      
+      if @use_nsupdate
+        #raise ::OpenShift::DNSNotFoundException.new unless dns_entry_exists?(fqdn, Dnsruby::Types::TXT)
+        raise DNSException.new unless system %{
+nsupdate <<EOF
+key #{@keyname} #{@keyvalue}
+server #{@server} #{@port}
+update delete #{fqdn} TXT
+send
+quit
+EOF
+        }
+      else
+        # enable updates with key
+        dns.tsig = @keyname, @keyvalue
+        update = Dnsruby::Update.new(@zone)
+        update.delete(fqdn, 'TXT')
+        dns.send_message(update)
+      end
     end
 
     def register_application(app_name, namespace, public_hostname)
       # create an A record for the application in the domain
       fqdn = "#{app_name}-#{namespace}.#{@domain_suffix}"
-      # enable updates with key
-      dns.tsig = @keyname, @keyvalue
-
-      update = Dnsruby::Update.new(@zone)
-      update.add(fqdn, 'CNAME', 60, public_hostname)
-      dns.send_message(update)
+      
+      if @use_nsupdate
+        raise ::OpenShift::DNSAlreadyExistsException.new if dns_entry_exists?(fqdn, Dnsruby::Types::CNAME)
+        raise DNSException.new unless system %{
+nsupdate <<EOF
+key #{@keyname} #{@keyvalue}
+server #{@server} #{@port}
+update add #{fqdn} 60 CNAME #{public_hostname}
+send
+quit
+EOF
+        }
+      else
+        # enable updates with key
+        dns.tsig = @keyname, @keyvalue
+        update = Dnsruby::Update.new(@zone)
+        update.add(fqdn, 'CNAME', 60, public_hostname)
+        dns.send_message(update)
+      end
     end
 
     def deregister_application(app_name, namespace)
@@ -92,17 +124,30 @@ module OpenShift
         # delete the CNAME record for the application in the domain
         fqdn = "#{app_name}-#{namespace}.#{@domain_suffix}"
   
-        # We know we only have one CNAME per app, so look it up
-        # We need it for the delete
-        # should be an error if there's not exactly one answer
-        current = dns.query(fqdn, 'CNAME')
-        cnamevalue = current.answer[0].rdata.to_s        
-  
-        # enable updates with key
-        dns.tsig = @keyname, @keyvalue
-        update = Dnsruby::Update.new(@zone)
-        update_response = update.delete(fqdn, 'CNAME', cnamevalue)
-        send_response = dns.send_message(update)
+        if @use_nsupdate
+          #raise ::OpenShift::DNSNotFoundException.new unless dns_entry_exists?(fqdn, Dnsruby::Types::CNAME)
+          raise DNSException.new unless system %{
+nsupdate <<EOF
+key #{@keyname} #{@keyvalue}
+server #{@server} #{@port}
+update delete #{fqdn} CNAME
+send
+quit
+EOF
+          }
+        else
+          # We know we only have one CNAME per app, so look it up
+          # We need it for the delete
+          # should be an error if there's not exactly one answer
+          current = dns.query(fqdn, 'CNAME')
+          cnamevalue = current.answer[0].rdata.to_s
+          
+          # enable updates with key
+          dns.tsig = @keyname, @keyvalue
+          update = Dnsruby::Update.new(@zone)
+          update_response = update.delete(fqdn, 'CNAME', cnamevalue)
+          send_response = dns.send_message(update)
+        end
       rescue Dnsruby::NXDomain
         Rails.logger.debug "DEBUG: BIND: Could not find CNAME for #{fqdn} to delete"
       end
@@ -119,5 +164,28 @@ module OpenShift
     def close
     end
     
+    private
+    
+    def dns_entry_exists?(fqdn, type)
+      if @use_nsupdate
+        case type
+        when Dnsruby::Types::TXT
+          system("host -t TXT #{fqdn} > /dev/null")
+        when Dnsruby::Types::CNAME
+          system("host -t CNAME #{fqdn} > /dev/null")
+        else
+          raise "Unknown type #{type}"
+        end
+      else
+        # If we get a response, then the namespace is reserved
+        # An exception means that it is available
+        begin
+          dns.query(fqdn, type)
+          return true
+        rescue Dnsruby::NXDomain
+          return false
+        end
+      end
+    end
   end
 end

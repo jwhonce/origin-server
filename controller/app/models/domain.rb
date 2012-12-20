@@ -99,7 +99,12 @@ class Domain < OpenShift::UserModel
   def self.namespace_available?(namespace)
     Rails.logger.debug "Checking to see if namesspace #{namespace} is available"
     dns_service = OpenShift::DnsService.instance
-    return dns_service.namespace_available?(namespace)
+    begin
+      dns_service.namespace_available?(namespace)
+    ensure
+      dns_service.close
+    end
+    return dns_service
   end
 
   def self.hash_to_obj(hash)
@@ -116,7 +121,7 @@ class Domain < OpenShift::UserModel
     Rails.logger.debug "Updating namespace for domain #{self.uuid} from #{old_namespace} to #{self.namespace}"
     dns_service = OpenShift::DnsService.instance
 
-    begin 
+    begin
       raise OpenShift::UserException.new("A namespace with name '#{self.namespace}' already exists", 103) unless dns_service.namespace_available?(self.namespace)
       dns_service.register_namespace(self.namespace)
       dns_service.deregister_namespace(old_namespace)

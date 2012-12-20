@@ -72,5 +72,6 @@ BIND_PORT=53
 BIND_KEYNAME="${node_domain}"
 BIND_KEYVALUE="${KEY}"
 BIND_ZONE="${node_domain}"
+USE_NSUPDATE="true"
 EOF
 perl -p -i -e "s/.*:domain_suffix.*/    :domain_suffix => \"$node_domain\",/" /var/www/openshift/broker/config/environments/*.rb

@@ -17,6 +17,7 @@ Broker::Application.configure do
     :port => conf.get("BIND_PORT", "53").to_i,
     :keyname => conf.get("BIND_KEYNAME", "example.com"),
     :keyvalue => conf.get("BIND_KEYVALUE", "base64-encoded key, most likely from /var/named/example.com.key."),
-    :zone => conf.get("BIND_ZONE", "example.com")
+    :zone => conf.get("BIND_ZONE", "example.com"),
+    :use_nsupdate => conf.get("USE_NSUPDATE", "true").downcase == "true",
   }
 end

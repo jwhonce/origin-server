@@ -18,8 +18,3 @@ Feature: Application estimate
     Then the response should be "200"
     And should get 1 gears
     And should get 1 gear with 'php-5.3,mysql-5.1' components
-#FIXME: once group override is enabled, this scenario will fail and 
-#       the correct expected result is given below
-#    And should get 2 gears
-#    And should get 1 gear with 'php-5.3' component
-#    And should get 1 gear with 'mysql-5.1' component
