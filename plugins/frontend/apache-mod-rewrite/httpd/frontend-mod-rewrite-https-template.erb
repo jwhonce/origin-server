@@ -10,7 +10,7 @@
 
   SSLProtocol ALL -SSLv2
   SSLHonorCipherOrder On
-  SSLCipherSuite RC4-SHA:HIGH:MEDIUM:!ADH
+  SSLCipherSuite kEECDH:+kEECDH+SHA:kEDH:+kEDH+SHA:+kEDH+CAMELLIA:kECDH:+kECDH+SHA:kRSA:+kRSA+SHA:+kRSA+CAMELLIA:!aNULL:!eNULL:!SSLv2:!RC4:!DES:!EXP:!SEED:!IDEA:+3DES
 
   SSLCertificateFile <%= ssl_certificate_file %>
   SSLCertificateKeyFile <%= ssl_key_file %>
