@@ -1,0 +1,145 @@
+# As of 2014/05/23 schema for cartridge manifest.yml
+#
+# Issues:
+type: map
+mapping:
+  "Name": { type: str, required: true}
+  "Cartridge-Short-Name": {type: str, required: true, pattern: '/[A-Z_]+/'}
+  "Display-Name": { type: str, required: true}
+  "Description": { type: str, required: true}
+  "Version": { type: str, required: true}
+  "Architecture": { type: str, required: false}
+  "Versions": { type: seq, sequence: [{ type: str, unique: true}]}
+  "License": { type: str}
+  "License-Url": { type: str}
+  "Vendor": { type: str, required: true}
+  Native-Requires: {type: seq, sequence: [{ type: str, unique: true}]}
+  Reservations: {type: seq, sequence: [{ type: str, unique: true}]}
+  Requires: {type: seq, sequence: [{ type: str, unique: true}]}
+  "Cartridge-Version": {type: str, required: true, pattern: '/[0-9][0-9\.]*/'}
+  "Compatible-Versions":
+    type: seq
+    sequence: [{type: str, pattern: '/[0-9][0-9\.]*/'}]
+  "Cartridge-Vendor": { type: str, required: true, pattern: '/[a-z]+/'}
+  "Categories":
+    type: seq
+    sequence: [{type: str, required: true, pattern: '/[a-z][a-z_]*/'}]
+  "Website": { type: str }
+  "Help-Topics":
+    type: map
+    mapping:
+      "Developer Center": {type: str}
+      "=": {type: str}
+  "Cart-Data":
+    type: seq
+    sequence:
+      - type: map
+        required: true
+        mapping:
+          "Key": {type: str}
+          "Type": {type: str, enum: [environment, cart_data]}
+          "Description": {type: str}
+  "Configure-Order":
+    type: seq
+    sequence:
+      - type: str
+        pattern: '/[a-z-]+/'
+  "Group-Overrides":
+    type: seq
+    sequence:
+      - type: map
+        required: true
+        mapping:
+          "components":
+            type: seq
+            sequence:
+              - type: str
+                pattern: '/[a-z-]+/'
+  "Publishes":
+    type: map
+    mapping:
+      "=":
+        type: map
+        mapping:
+          "Type": {type: str, required: true}
+  "Subscribes":
+    type: map
+    mapping:
+      "=":
+        type: map
+        mapping:
+          "Type": { type: str, required: true }
+          "Required": {type: bool}
+  "Scaling":
+    type: map
+    mapping:
+      "Min": {type: int}
+      "Max": {type: int}
+      "Multiplier": {type: int}
+  "Provides":
+    type: seq
+    sequence:
+      - { type: str, unique: true}
+  "Components":
+    type: map
+    mapping:
+      "=":
+        type: map
+        mapping:
+          "=": {type: any}
+  "Suggests":
+    type: seq
+    sequence: [{type: str}]
+  "Conflicts":
+    type: seq
+    sequence: [{type: str}]
+  "Endpoints":
+    type: seq
+    sequence:
+      - type: map
+        mapping:
+          "Private-IP-Name": { type: str, pattern: '/[A-Z][A-Z_]+/', required: true}
+          "Private-Port-Name": { type: str, pattern: '/[A-Z][A-Z_]+/', required: true}
+          "Private-Port": {type: int, range: {min-ex: 1024}}
+          "Public-Port-Name": { type: str, pattern: '/[A-Z][A-Z_]+/'}
+          "WebSocket-Port-Name": { type: str, pattern: '/[A-Z][A-Z_]+/'}
+          "WebSocket-Port": {type: int, range: {min-ex: 1024}}
+          "Protocols":
+            type: seq
+            sequence: [{type: str}]
+          "Mappings":
+            type: seq
+            sequence:
+              - type: map
+                mapping:
+                  "Frontend": {type: str}
+                  "Backend": {type: str}
+                  "Options":
+                    type: map
+                    mapping:
+                      "websocket": {type: any, enum: [true, false, 0, 1]}
+                      "health": {type: bool}
+                      "target_update": {type: bool}
+                      "connections": {type: int}
+                      "file": {type: bool}
+                      "tohttps": {type: bool}
+
+          "Options":
+            type: map
+            mapping:
+              "ssl_to_gear": {type: bool}
+              "primary": {type: bool}
+  "Additional-Control-Actions":
+    type: seq
+    sequence: [{type: str, enum: [threaddump]}]
+  "Version-Overrides":
+    type: map
+    mapping:
+      "=":
+        type: map
+        mapping:
+          "=": {type: any}
+  "Install-Build-Required": {type: bool}
+  "Metrics":
+    type: seq
+    sequence: [{type: str}]

@@ -19,6 +19,7 @@ require 'rubygems'
 require 'etc'
 require 'optparse'
 require 'ostruct'
+require 'kwalify'
 require 'openshift-origin-common'
 require 'openshift-origin-node/utils/shell_exec'
 require 'openshift-origin-node/model/cartridge_repository'
@@ -86,15 +87,31 @@ module OpenShift
             end
           when :list
             buffer, _, _ = ::OpenShift::Runtime::Utils.oo_spawn('oo-mco rpc -q openshift cartridge_repository action=list',
-                                                                 expected_exitstatus: 0)
+                                                                expected_exitstatus: 0)
           when :erase
             command      = %Q(oo-mco rpc openshift cartridge_repository action=erase \
                        name="#{options.name}" version="#{options.version}" cartridge_version="#{options.cartridge_version}")
             buffer, _, _ = ::OpenShift::Runtime::Utils.oo_spawn(command,
-                                                                 expected_exitstatus: 0)
+                                                                expected_exitstatus: 0)
         end
 
         buffer.squeeze!("\n")
+      end
+    end
+
+    class ValidateSchema
+      def apply(options, schema_file, target)
+        dirs = if options.recursive
+                 Dir[File.join(options.source, '/*')].select { |d| File.directory?(d) }
+               else
+                 [options.source]
+               end
+
+        dirs.each do |dir|
+          schema = File.join('/etc/openshift/kwalify', schema_file)
+          yaml   = PathUtils.join(dir, 'metadata', target)
+          Utils.oo_spawn("kwalify -f #{schema} #{yaml}", out: STDOUT, err: STDERR)
+        end
       end
     end
   end
@@ -106,7 +123,7 @@ parser  = OptionParser.new do |opts|
   opts.separator ''
   opts.separator 'Options:'
 
-  opts.on('-a', '--action ACTION', 'one of <install|list|erase>') { |o| options.action = o.to_sym }
+  opts.on('-a', '--action ACTION', 'one of <install|list|erase|validate>') { |o| options.action = o.to_sym }
   opts.on('-s', '--source path', 'Directory of the cartridge to install') { |o| options.source = File.expand_path(o) }
   opts.on('--mco', 'Issue action via mcollective agent') { |o| options.mco = o }
 
@@ -132,9 +149,10 @@ unless options.action
 end
 
 mandatory = {
-    install: [:source],
-    list:    [],
-    erase:   [:name, :version, :cartridge_version]
+    install:  [:source],
+    list:     [],
+    erase:    [:name, :version, :cartridge_version],
+    validate: [:source],
 }
 
 missing = mandatory[options.action].select { |o| not options.respond_to? o }
@@ -144,17 +162,22 @@ unless missing.empty?
 end
 
 begin
-  if options.mco
-    puts OpenShift::Runtime::AdminCartridgeMcollective.new.apply(options)
+  if :validate == options.action
+    OpenShift::Runtime::ValidateSchema.new.apply(options, 'manifest_schema.yml', 'manifest.yml')
+    OpenShift::Runtime::ValidateSchema.new.apply(options, 'managed_files_schema.yml', 'managed_files.yml')
   else
-    puts OpenShift::Runtime::AdminCartridgeCartridgeRepository.new.apply(options)
-  end
-  if [:install, :erase].include?(options.action)
-    if File.exist?("/etc/fedora-release")
-      OpenShift::Runtime::Utils.oo_spawn('service mcollective restart')
-      sleep(5) #wait for mcollective to be stable again
+    if options.mco
+      puts OpenShift::Runtime::AdminCartridgeMcollective.new.apply(options)
     else
-      OpenShift::Runtime::Utils.oo_spawn('pkill -USR1 -f /usr/sbin/mcollectived')
+      puts OpenShift::Runtime::AdminCartridgeCartridgeRepository.new.apply(options)
+    end
+    if [:install, :erase].include?(options.action)
+      if File.exist?("/etc/fedora-release")
+        OpenShift::Runtime::Utils.oo_spawn('service mcollective restart')
+        sleep(5) #wait for mcollective to be stable again
+      else
+        OpenShift::Runtime::Utils.oo_spawn('pkill -USR1 -f /usr/sbin/mcollectived')
+      end
     end
   end
 rescue OpenShift::Runtime::Utils::ShellExecutionException => e

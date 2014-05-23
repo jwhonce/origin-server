@@ -36,8 +36,8 @@ Scaling:
   Min: 1
   Max: 1
 Configure-Order:
-- - mysql
-  - mariadb
+- mysql
+- mariadb
 - phpmyadmin
 Endpoints:
 - Private-IP-Name: IP

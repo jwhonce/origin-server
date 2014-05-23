@@ -1,0 +1,9 @@
+type: map
+mapping:
+  "locked_files": {type: seq, sequence: [{type: str}]}
+  "processed_templates": {type: seq, sequence: [{type: str}]}
+  "build_dependency_dirs": {type: seq, sequence: [{type: str}]}
+  "setup_rewritten": {type: seq, sequence: [{type: str}]}
+  "dependency_dirs": {type: any}
+  "snapshot_exclusions": {type: seq, sequence: [{type: str}]}
+

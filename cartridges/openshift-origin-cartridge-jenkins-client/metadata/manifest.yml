@@ -1,5 +1,6 @@
 ---
 Name: jenkins-client
+Vendor: Jenkins CI
 Cartridge-Short-Name: JENKINS_CLIENT
 Display-Name: Jenkins Client
 Description: The Jenkins client connects to your Jenkins application and enables builds
@@ -30,8 +31,8 @@ Help-Topics:
 Provides:
 - jenkins-client-1
 - jenkins-client
-Publishes: 
-Subscribes: 
+Publishes:
+Subscribes:
 Group-Overrides:
 - components:
   - jenkins-client-1

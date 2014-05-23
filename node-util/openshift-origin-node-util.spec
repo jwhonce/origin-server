@@ -23,6 +23,7 @@ Requires:      %{?scl:%scl_prefix}rubygem-daemons
 Requires:      httpd
 Requires:      php >= 5.3.2
 Requires:      lsof
+Requires:      rubygem-kwalify
 %if %{with_systemd}
 Requires:      systemd-units
 BuildRequires: systemd-units
@@ -71,6 +72,9 @@ cp -p man8/*.8 %{buildroot}%{_mandir}/man8/
 
 mkdir -p %{buildroot}%{_initddir}
 mv init.d/openshift-watchman %{buildroot}%{_initddir}/
+
+mkdir -p %{buildroot}/%{_sysconfdir}/openshift/kwalify/
+cp -pr conf/kwalify/* %{buildroot}/%{_sysconfdir}/openshift/kwalify
 
 mkdir -p %{buildroot}/%{_sysconfdir}/openshift/watchman/plugins.d/
 cp -pr conf/watchman/* %{buildroot}/%{_sysconfdir}/openshift/watchman
@@ -133,6 +137,8 @@ cp -p init.d/openshift-gears %{buildroot}%{_initddir}/
 %attr(0755,-,-) %{_bindir}/oo-gear-registry
 %attr(0755,-,-) %{_sysconfdir}/openshift/watchman/plugins.d/
 %attr(0744,-,-) %{_sysconfdir}/openshift/watchman/plugins.d/*
+%attr(0755,-,-) %{_sysconfdir}/openshift/kwalify/
+%attr(0744,-,-) %{_sysconfdir}/openshift/kwalify/*
 
 %{_mandir}/man8/oo-accept-node.8.gz
 %{_mandir}/man8/oo-admin-gear.8.gz
